@@ -29,12 +29,17 @@
 
 #include "DetectorConstruction.hh"
 #include "ActionInitialization.hh"
+#include "G4Scintillation.hh"
+
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
 #include "G4UImanager.hh"
-#include "QBBC.hh"
+#include "G4OpticalParameters.hh"
+#include "FTFP_BERT.hh"
 
+#include "G4EmStandardPhysics_option4.hh"
+#include "G4OpticalPhysics.hh"
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 
@@ -69,9 +74,35 @@ int main(int argc,char** argv)
   runManager->SetUserInitialization(new DetectorConstruction());
 
   // Physics list
-  G4VModularPhysicsList* physicsList = new QBBC;
-  physicsList->SetVerboseLevel(1);
+  auto opticalParams = G4OpticalParameters::Instance();
+  G4VModularPhysicsList* physicsList = new FTFP_BERT;
+  physicsList->ReplacePhysics(new G4EmStandardPhysics_option4());
+  G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
+  physicsList->RegisterPhysics(opticalPhysics);
   runManager->SetUserInitialization(physicsList);
+
+  runManager->SetUserInitialization(new ActionInitialization());
+
+
+  // tom's code
+
+  //  G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
+  //auto opticalParams = G4OpticalParameters::Instance();
+  opticalParams ->SetWLSTimeProfile("delta");
+
+  //opticalPhysics->SetScintillationYieldFactor(1.0);
+  //opticalPhysics->SetScintillationExcitationRatio(0.126);
+  opticalParams ->SetCerenkovMaxPhotonsPerStep(5);
+  //opticalPhysics->SetMaxNumPhotonsPerStep(5);
+  opticalParams-> SetScintTrackSecondariesFirst(true);
+  //  opticalPhysics->SetTrackSecondariesFirst(kScintillation,true);
+
+  physicsList->RegisterPhysics(opticalPhysics);
+
+
+  runManager->SetUserInitialization(physicsList);
+
+
 
   // User action initialization
   runManager->SetUserInitialization(new ActionInitialization());

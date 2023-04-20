@@ -28,7 +28,7 @@
 /// \brief Implementation of the B1::DetectorConstruction class
 
 #include "DetectorConstruction.hh"
-
+#include "G4SubtractionSolid.hh"
 #include "G4RunManager.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -69,6 +69,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   auto solidWorld = new G4Box("World",                           // its name
     0.5 * world_sizeXY, 0.5 * world_sizeXY, 0.5 * world_sizeZ);  // its size
 
+
   auto logicWorld = new G4LogicalVolume(solidWorld,  // its solid
     world_mat,                                       // its material
     "World");                                        // its name
@@ -88,14 +89,23 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   auto solidEnv = new G4Box("Envelope",                    // its name
     0.5 * env_sizeXY, 0.5 * env_sizeXY, 0.5 * env_sizeZ);  // its size
 
+  auto solidShape1 = new G4Box("Shape1",                           // its name
+    0.4 * world_sizeXY, 0.4 * world_sizeXY, 0.4 * world_sizeZ);
+
+
+
   auto logicEnv = new G4LogicalVolume(solidEnv,  // its solid
     env_mat,                                     // its material
     "Envelope");                                 // its name
 
+
+  auto detectorShell = new G4SubtractionSolid("Detector", solidEnv, solidShape1);
+  auto logicDetector = new G4LogicalVolume(detectorShell, env_mat, "Detector");
+  
   new G4PVPlacement(nullptr,  // no rotation
     G4ThreeVector(),          // at (0,0,0)
-    logicEnv,                 // its logical volume
-    "Envelope",               // its name
+    logicDetector,                 // its logical volume
+    "Detector",               // its name
     logicWorld,               // its mother  volume
     false,                    // no boolean operation
     0,                        // copy number
@@ -113,7 +123,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double rindexlAr[2] = {1.2666,1.2287};
 
   //defines a material we can add properties to
-  G4MaterialPropertiesTable *mptlAr = new G4MaterialPropertiesTable();
+  G4MaterialPropertiesTable* mptlAr = new G4MaterialPropertiesTable();
   //adds the refractive index 
   mptlAr->AddProperty("RINDEX", energy, rindexlAr, 2);
   
@@ -125,8 +135,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   mptlAr->AddConstProperty("SCINTILLATIONYIELD", 40000. / MeV);
   mptlAr->AddConstProperty("RESOLUTIONSCALE",1.);
   // updated for v11
+  mptlAr->AddConstProperty("YIELDRATIO", 0.126, true);
   mptlAr->AddConstProperty("SCINTILLATIONCOMPONENT2", 6. * ns, true);
-  mptlAr->AddConstProperty("SCINTILLATIONCOMPONENT3", 1500. *ns, true);
+  mptlAr->AddConstProperty("SCINTILLATIONCOMPONENT3", 1500. * ns, true);
   mptlAr->AddConstProperty("SCINTILLATIONYIELD1", 1.0);
   mptlAr->AddProperty("ABSLENGTH", lAr_Energy, lAr_abslen, 3);
   //changes cube material to the new liquid argon with all the right properties
@@ -134,20 +145,18 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   // ^ end tom's code
 
-  G4ThreeVector pos1 = G4ThreeVector(0, 2*cm, -7*cm);
+  G4ThreeVector pos1 = G4ThreeVector(0, 0, 0);//2*cm, -7*cm);
 
-  auto solidShape1 = new G4Box("World",                           // its name                                                                      
-    0.4 * world_sizeXY, 0.4 * world_sizeXY, 0.4 * world_sizeZ);
 
   auto logicShape1 = new G4LogicalVolume(solidShape1,  // its solid
     shape1_mat,                                        // its material
-    "Shape1");                                         // its name
-
+    "Shape1");                                         // its name 
+  
   new G4PVPlacement(nullptr,  // no rotation
     pos1,                     // at position
     logicShape1,              // its logical volume
     "Shape1",                 // its name
-    logicEnv,                 // its mother  volume
+    logicDetector,                 // its mother  volume
     false,                    // no boolean operation
     0,                        // copy number
     checkOverlaps);           // overlaps checking

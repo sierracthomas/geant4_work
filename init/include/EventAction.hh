@@ -52,9 +52,13 @@ class EventAction : public G4UserEventAction
 
     void AddEdep(G4double edep) { fEdep += edep; }
 
+  // voice AddCompton(G4double compton) {fComp += compton}
+  
   private:
     RunAction* fRunAction = nullptr;
     G4double   fEdep = 0.;
+  //G4double fComp = 0.;
+  
 };
 
 }
