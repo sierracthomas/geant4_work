@@ -30,8 +30,11 @@
 #include "RunAction.hh"
 #include "PrimaryGeneratorAction.hh"
 #include "DetectorConstruction.hh"
+#include "G4AnalysisManager.hh"
+//#include "RunMessenger.hh"
 // #include "Run.hh"
 
+#include "G4CsvAnalysisManager.hh"
 #include "G4RunManager.hh"
 #include "G4Run.hh"
 #include "G4AccumulableManager.hh"
@@ -39,6 +42,7 @@
 #include "G4LogicalVolume.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "Randomize.hh"
 
 namespace B1
 {
@@ -46,9 +50,18 @@ namespace B1
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 RunAction::RunAction()
+  : G4UserRunAction(),
+    fMessenger(0),
+    fSaveRndm(0)
 {
+
+  using G4AnalysisManager = G4CsvAnalysisManager;
+  G4AnalysisManager *man = G4AnalysisManager::Instance();
   // add new units for dose
   //
+  //fMessenger = new RunMessenger(this);
+  //  man->SetNtupleMerging(true);
+
   const G4double milligray = 1.e-3*gray;
   const G4double microgray = 1.e-6*gray;
   const G4double nanogray  = 1.e-9*gray;
@@ -69,6 +82,23 @@ RunAction::RunAction()
 
 void RunAction::BeginOfRunAction(const G4Run*)
 {
+  using G4AnalysisManager = G4CsvAnalysisManager;
+  G4AnalysisManager *man = G4AnalysisManager::Instance();
+  
+  G4String fileName = "run.csv";
+  man->OpenFile(fileName);
+  man->SetVerboseLevel(1);
+  man->CreateNtuple("Hits","Hits");
+
+  man->CreateNtupleDColumn("mx_y");
+  man->CreateNtupleIColumn("track_id");
+  man->CreateNtupleIColumn("event_id");
+  man->CreateNtupleDColumn("delta_z");
+  man->CreateNtupleDColumn("delta_E");
+  man->CreateNtupleIColumn("type");
+  man->CreateNtupleIColumn("fdetected_sp");
+  man->FinishNtuple(0);
+  
   // inform the runManager to save random number seed
   G4RunManager::GetRunManager()->SetRandomNumberStore(false);
 
@@ -82,6 +112,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 
 void RunAction::EndOfRunAction(const G4Run* run)
 {
+  using G4AnalysisManager = G4CsvAnalysisManager;
   G4int nofEvents = run->GetNumberOfEvent();
   if (nofEvents == 0) return;
 
@@ -141,6 +172,20 @@ void RunAction::EndOfRunAction(const G4Run* run)
      << "------------------------------------------------------------"
      << G4endl
      << G4endl;
+
+
+  auto man = G4AnalysisManager::Instance();
+
+  man->FillNtupleDColumn(0, fx);
+  man->FillNtupleIColumn(2, event_id);
+  man->FillNtupleIColumn(1, track_id);
+  man->FillNtupleDColumn(3, delta_z);
+  man->FillNtupleDColumn(4,delta_E);
+  man->FillNtupleIColumn(5,type);
+  man->AddNtupleRow(0);
+  
+  man->Write();
+  man->CloseFile();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

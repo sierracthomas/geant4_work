@@ -33,7 +33,8 @@
 #include "G4UserRunAction.hh"
 #include "G4Accumulable.hh"
 #include "globals.hh"
-
+#include "G4RunManager.hh"
+#include "G4CsvAnalysisManager.hh"
 class G4Run;
 
 /// Run action class
@@ -59,6 +60,17 @@ class RunAction : public G4UserRunAction
   private:
     G4Accumulable<G4double> fEdep = 0.;
     G4Accumulable<G4double> fEdep2 = 0.;
+    G4RunMessenger* fMessenger;
+    G4int fSaveRndm;
+  //    RunAction* fRunAction;
+    G4double fx;
+    int event_id;
+    G4double delta_z;
+    int track_id;
+    G4double delta_E;
+    int type;
+    int fdetected_sp;
+  
 };
 
 }

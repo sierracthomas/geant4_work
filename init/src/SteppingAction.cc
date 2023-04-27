@@ -36,9 +36,12 @@
 #include "G4RunManager.hh"
 #include "G4LogicalVolume.hh"
 
+#include "G4CsvAnalysisManager.hh"
+
 namespace B1
 {
 
+  
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 SteppingAction::SteppingAction(EventAction* eventAction)
@@ -49,6 +52,38 @@ SteppingAction::SteppingAction(EventAction* eventAction)
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
+  //track length 
+  G4ThreeVector x = step->GetDeltaPosition();
+  using G4AnalysisManager = G4CsvAnalysisManager;
+  G4AnalysisManager *man = G4AnalysisManager::Instance();
+  man->FillNtupleDColumn(0,0, sqrt(x[0]*x[0]+x[1]*x[1]));
+  man->AddNtupleRow(0);
+
+  G4int track_id = step->GetTrack()->GetTrackID();
+  man->FillNtupleIColumn(1,track_id);
+
+  //Event ID
+  G4int event_id = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
+  man->FillNtupleIColumn(2,event_id);
+
+  //Delta Z distance  
+  man->FillNtupleDColumn(3, x[2]);
+
+  //Change in energy
+  G4double delta_E = step->GetDeltaEnergy();
+  man->FillNtupleDColumn(4,delta_E);
+
+  //Type of particle
+  G4String name = step->GetTrack()->GetParticleDefinition()->GetParticleName();
+  G4int type = 0;
+  
+  if (name=="gamma"){type = 0;}
+  else if (name=="e-"){type = 1;}
+  else {type = 2;}
+  man->FillNtupleIColumn(5,type);
+
+  man->AddNtupleRow(0);
+
   if (!fScoringVolume) {
     const auto detConstruction = static_cast<const DetectorConstruction*>(
       G4RunManager::GetRunManager()->GetUserDetectorConstruction());
