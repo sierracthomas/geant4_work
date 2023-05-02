@@ -90,14 +90,14 @@ void RunAction::BeginOfRunAction(const G4Run*)
   man->SetVerboseLevel(1);
   man->CreateNtuple("Hits","Hits");
 
-  man->CreateNtupleDColumn("delta_x");
-  man->CreateNtupleIColumn("track_id");
   man->CreateNtupleIColumn("event_id");
+  man->CreateNtupleIColumn("track_id");
+  man->CreateNtupleIColumn("type");
+  man->CreateNtupleDColumn("delta_x");
+  man->CreateNtupleDColumn("delta_y");
   man->CreateNtupleDColumn("delta_z");
   man->CreateNtupleDColumn("delta_E");
-  man->CreateNtupleIColumn("type");
-  man->CreateNtupleIColumn("fdetected_sp");
-  man->CreateNtupleDColumn("delta_y");
+  man->CreateNtupleIColumn("process");
   man->FinishNtuple(0);
   
   // inform the runManager to save random number seed
@@ -177,14 +177,15 @@ void RunAction::EndOfRunAction(const G4Run* run)
 
   auto man = G4AnalysisManager::Instance();
 
-  man->FillNtupleDColumn(0, fx);
-  man->FillNtupleIColumn(2, event_id);
+
+  man->FillNtupleIColumn(0, event_id);
   man->FillNtupleIColumn(1, track_id);
-  man->FillNtupleDColumn(3, delta_z);
-  man->FillNtupleDColumn(4, delta_E);
-  man->FillNtupleIColumn(5, type);
-  man->AddNtupleRow(0);
-  man->FillNtupleDColumn(7, delta_y);
+  man->FillNtupleIColumn(2, type);
+  man->FillNtupleDColumn(3, delta_x);
+  man->FillNtupleDColumn(4, delta_y);
+  man->FillNtupleDColumn(5, delta_z);
+  man->FillNtupleDColumn(6, delta_E);
+  man->FillNtupleIColumn(7, process);
   
   man->Write();
   man->CloseFile();

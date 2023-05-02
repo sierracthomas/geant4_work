@@ -53,25 +53,45 @@ SteppingAction::SteppingAction(EventAction* eventAction)
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
   //track length 
-  G4ThreeVector x = step->GetDeltaPosition();
+  G4ThreeVector x = step->GetTrack()->GetPosition();
+
+  //  auto CreatorProcess = step->GetTrack()->GetCreatorProcess()->GetProcessName();
+
+  //  G4cout << "process is: CHECK " << CreatorProcess << G4endl;
+
   using G4AnalysisManager = G4CsvAnalysisManager;
   G4AnalysisManager *man = G4AnalysisManager::Instance();
-  man->FillNtupleDColumn(0, x[0]);
+  man->FillNtupleDColumn(3, x[0]);
   //  man->AddNtupleRow(0);
 
+  
+  //  man->FillNtupleIColumn(7, CreatorProcess);
+
+  //Type of particle                                                                                                                         
+
+  //G4int proc = 0;
+
+
+  /*
+  if (CreatorProcess=="0"){proc = 0;}
+  else {proc = 1;} */
+  //man->FillNtupleIColumn(7, proc);
+   
+
+
   G4int track_id = step->GetTrack()->GetTrackID();
-  man->FillNtupleIColumn(1,track_id);
+  man->FillNtupleIColumn(1, track_id);
 
   //Event ID
   G4int event_id = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
-  man->FillNtupleIColumn(2,event_id);
+  man->FillNtupleIColumn(0, event_id);
 
   //Delta Z distance  
-  man->FillNtupleDColumn(3, x[2]);
+  man->FillNtupleDColumn(5, x[2]);
 
   //Change in energy
   G4double delta_E = step->GetDeltaEnergy();
-  man->FillNtupleDColumn(4,delta_E);
+  man->FillNtupleDColumn(6, delta_E);
 
   //Type of particle
   G4String name = step->GetTrack()->GetParticleDefinition()->GetParticleName();
@@ -80,11 +100,12 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   if (name=="gamma"){type = 0;}
   else if (name=="e-"){type = 1;}
   else {type = 2;}
-  man->FillNtupleIColumn(5,type);
+  man->FillNtupleIColumn(2, type);
 
+  //  man->AddNtupleRow(0);
+
+  man->FillNtupleDColumn(4, x[1]);
   man->AddNtupleRow(0);
-
-  man->FillNtupleDColumn(7, x[1]);
   
   if (!fScoringVolume) {
     const auto detConstruction = static_cast<const DetectorConstruction*>(

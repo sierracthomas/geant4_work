@@ -63,7 +63,7 @@ class RunAction : public G4UserRunAction
     G4RunMessenger* fMessenger;
     G4int fSaveRndm;
   //    RunAction* fRunAction;
-    G4double fx;
+    G4double delta_x;
     int event_id;
     G4double delta_z;
     int track_id;
@@ -71,7 +71,7 @@ class RunAction : public G4UserRunAction
     int type;
     int fdetected_sp;
     G4double delta_y;
-  
+    int process;
 };
 
 }
