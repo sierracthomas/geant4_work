@@ -56,8 +56,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   G4ThreeVector x = step->GetDeltaPosition();
   using G4AnalysisManager = G4CsvAnalysisManager;
   G4AnalysisManager *man = G4AnalysisManager::Instance();
-  man->FillNtupleDColumn(0,0, sqrt(x[0]*x[0]+x[1]*x[1]));
-  man->AddNtupleRow(0);
+  man->FillNtupleDColumn(0, x[0]);
+  //  man->AddNtupleRow(0);
 
   G4int track_id = step->GetTrack()->GetTrackID();
   man->FillNtupleIColumn(1,track_id);
@@ -84,6 +84,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
 
   man->AddNtupleRow(0);
 
+  man->FillNtupleDColumn(7, x[1]);
+  
   if (!fScoringVolume) {
     const auto detConstruction = static_cast<const DetectorConstruction*>(
       G4RunManager::GetRunManager()->GetUserDetectorConstruction());

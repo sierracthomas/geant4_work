@@ -70,6 +70,7 @@ class RunAction : public G4UserRunAction
     G4double delta_E;
     int type;
     int fdetected_sp;
+    G4double delta_y;
   
 };
 
