@@ -1,0 +1,228 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+//
+/// \file B1/src/DetectorConstruction.cc
+/// \brief Implementation of the B1::DetectorConstruction class
+
+#include "DetectorConstruction.hh"
+#include "G4SubtractionSolid.hh"
+#include "G4RunManager.hh"
+#include "G4NistManager.hh"
+#include "G4Box.hh"
+#include "G4Cons.hh"
+#include "G4Orb.hh"
+#include "G4Sphere.hh"
+#include "G4Trd.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4SystemOfUnits.hh"
+
+namespace B1
+{
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::DefineMaterials()
+{
+   auto nistManager = G4NistManager::Instance();
+ 
+  // Liquid argon material
+  G4double a;  // mass of a mole;
+  G4double z;  // z=mean number of protons;
+  G4double density;
+  G4Material* lAr =  new G4Material("liquidArgon", z=18., a= 39.95*g/mole, density= 1.390*g/cm3);
+         // The argon by NIST Manager is a gas with a different density
+
+  // Vacuum
+  //  new G4Material("Galactic", z=1., a=1.01*g/mole,density= universe_mean_density,
+  //                 kStateGas, 2.73*kelvin, 3.e-18*pascal);
+
+  // Print materials
+  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
+}
+
+  
+G4VPhysicalVolume* DetectorConstruction::Construct()
+{
+  // Get nist material manager
+  G4NistManager* nist = G4NistManager::Instance();
+
+  // Envelope parameters
+  //
+  G4double env_sizeXY = 1000*cm, env_sizeZ = 1000*cm;
+  G4Material* env_mat = nist->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+
+  // Option to switch on/off checking of volumes overlaps
+  //
+  G4bool checkOverlaps = true;
+
+  //
+  // World
+  //
+  G4double world_sizeXY = 1.2*env_sizeXY;
+  G4double world_sizeZ  = 1.2*env_sizeZ;
+  G4Material* world_mat = nist->FindOrBuildMaterial("G4_AIR");
+
+  auto solidWorld = new G4Box("World",                           // its name
+    world_sizeXY, world_sizeXY, world_sizeZ);  // its size
+
+
+  auto logicWorld = new G4LogicalVolume(solidWorld,  // its solid
+    world_mat,                                       // its material
+    "World");                                        // its name
+
+  auto physWorld = new G4PVPlacement(nullptr,  // no rotation
+    G4ThreeVector(),                           // at (0,0,0)
+    logicWorld,                                // its logical volume
+    "World",                                   // its name
+    nullptr,                                   // its mother  volume
+    false,                                     // no boolean operation
+    0,                                         // copy number
+    checkOverlaps);                            // overlaps checking
+
+  //
+  // Envelope
+  //
+  auto solidEnv = new G4Box("Envelope",                    // its name
+    env_sizeXY + 10*cm, env_sizeXY + 10*cm, env_sizeZ + 10*cm);  // its size
+
+  auto solidShape1 = new G4Box("Shape1",                           // its name
+    env_sizeXY, env_sizeXY, env_sizeZ);
+
+
+
+  auto logicEnv = new G4LogicalVolume(solidEnv,  // its solid
+    env_mat,                                     // its material
+    "Envelope");                                 // its name
+
+
+  auto detectorShell = new G4SubtractionSolid("Detector", solidEnv, solidShape1);
+  auto logicDetector = new G4LogicalVolume(detectorShell, env_mat, "Detector");
+  
+  new G4PVPlacement(nullptr,  // no rotation
+    G4ThreeVector(),          // at (0,0,0)
+    logicDetector,                 // its logical volume
+    "Detector",               // its name
+    logicWorld,               // its mother  volume
+    false,                    // no boolean operation
+    0,                        // copy number
+    checkOverlaps);           // overlaps checking
+
+  //
+  // Shape 1 - smaller cube of liquid argon inside steel cube
+  //
+  G4Material* shape1_mat = nist->FindOrBuildMaterial("G4_lAr");
+
+  // taken from Tom's code
+
+  //defines vectors to add in the refractive index of LAr property
+  G4double energy[2] = {1.239841939*eV/0.9, 1.239841939*eV/0.2};
+  G4double rindexlAr[2] = {1.2666,1.2287};
+
+  //defines a material we can add properties to
+  G4MaterialPropertiesTable* mptlAr = new G4MaterialPropertiesTable();
+  //adds the refractive index 
+  mptlAr->AddProperty("RINDEX", energy, rindexlAr, 2);
+  
+  //Adds a bunch of properties that allow scintillation light to be produced
+  G4double lAr_Energy[3] = {9.61*eV, 9.68*eV, 9.77*eV};
+  G4double lAr_SCINT[3] = {0.1,1.0,0.1};
+  G4double lAr_abslen[3] = {0.2*m,0.2*m,0.2*m};
+  mptlAr->AddProperty("SCINTILLATIONCOMPONENT1", lAr_Energy, lAr_SCINT, 3);
+  mptlAr->AddConstProperty("SCINTILLATIONYIELD", 40000. / MeV);
+  mptlAr->AddConstProperty("RESOLUTIONSCALE",1.);
+  // updated for v11
+  mptlAr->AddConstProperty("YIELDRATIO", 0.126, true);
+  mptlAr->AddConstProperty("SCINTILLATIONCOMPONENT2", 6. * ns, true);
+  mptlAr->AddConstProperty("SCINTILLATIONCOMPONENT3", 1500. * ns, true);
+  mptlAr->AddConstProperty("SCINTILLATIONYIELD1", 1.0);
+  mptlAr->AddProperty("ABSLENGTH", lAr_Energy, lAr_abslen, 3);
+  //changes cube material to the new liquid argon with all the right properties
+  //  shape1_mat->SetMaterialPropertiesTable(mptlAr);
+  //  G4Material* shape1_ma = nist->FindOrBuildMaterial("liquidArgon");
+
+  auto shape1_ma = G4Material::GetMaterial("liquidArgon");
+
+  
+  // ^ end tom's code
+
+  G4ThreeVector pos1 = G4ThreeVector(0, 0, 0);//2*cm, -7*cm);
+
+
+  auto logicShape1 = new G4LogicalVolume(solidShape1,  // its solid
+    shape1_mat,                                        // its material
+    "Shape1");                                         // its name 
+  
+  new G4PVPlacement(nullptr,  // no rotation
+    pos1,                     // at position
+    logicShape1,              // its logical volume
+    "Shape1",                 // its name
+    logicDetector,                 // its mother  volume
+    false,                    // no boolean operation
+    0,                        // copy number
+    checkOverlaps);           // overlaps checking
+
+  /*
+  //
+  // Shape 2
+  //
+  G4Material* shape2_mat = nist->FindOrBuildMaterial("G4_Ar");
+  G4ThreeVector pos2 = G4ThreeVector(0, -1*cm, 7*cm);
+
+  // Trapezoid shape
+  G4double shape2_dxa = 12*cm, shape2_dxb = 12*cm;
+  G4double shape2_dya = 10*cm, shape2_dyb = 16*cm;
+  G4double shape2_dz  = 6*cm;
+  auto solidShape2 = new G4Trd("Shape2",  // its name
+    0.5 * shape2_dxa, 0.5 * shape2_dxb, 0.5 * shape2_dya, 0.5 * shape2_dyb,
+    0.5 * shape2_dz);  // its size
+
+  auto logicShape2 = new G4LogicalVolume(solidShape2,  // its solid
+    shape2_mat,                                        // its material
+    "Shape2");                                         // its name
+
+  new G4PVPlacement(nullptr,  // no rotation
+    pos2,                     // at position
+    logicShape2,              // its logical volume
+    "Shape2",                 // its name
+    logicEnv,                 // its mother  volume
+    false,                    // no boolean operation
+    0,                        // copy number
+    checkOverlaps);           // overlaps checking
+  */
+  // Set Shape1 as scoring volume
+  //
+  fScoringVolume = logicShape1;
+
+  //
+  //always return the physical World
+  //
+  return physWorld;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+}

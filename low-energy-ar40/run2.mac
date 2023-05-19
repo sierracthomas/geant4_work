@@ -1,0 +1,21 @@
+# Macro file for example B1
+# 
+# To be run preferably in batch, without graphics:
+# % exampleB1 run2.mac
+# USE THIS ONE SO NO NEED FOR VIS
+/run/numberOfThreads 1
+/run/initialize
+#
+
+
+#/control/verbose 2
+/run/verbose 2
+
+/geometry/test/run
+#
+
+# check /home/sthoma31/ar40-deexc/src/PrimaryGeneratorAction.cc
+/gun/particle gamma
+/gun/energy 5 MeV
+
+/run/beamOn 20

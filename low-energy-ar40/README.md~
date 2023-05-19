@@ -1,0 +1,7 @@
+# In-progress Geant4 executable to look at Argon-40 interactions with low-energy incoming gammas
+
+
+Notes here:
+- based on `exampleB1` so need to change name
+- to compile:
+    - enter Singularity shell and source Geant4 modules with 
